@@ -7,6 +7,8 @@
 [![Bandwidth](https://img.shields.io/badge/Bandwidth-6--50_kbps-00FF88.svg)]()
 [![Status](https://img.shields.io/badge/Status-Stable-00E5FF.svg)]()
 
+**[🌐 Try Live Demo](https://lmcontent.github.io/ascii-messenger/)** | [📖 Documentation](#-quick-start) | [🐛 Report Bug](https://github.com/LMcontent/ascii-messenger/issues)
+
 ---
 
 ## 🎯 What is ASCII//STREAM?
@@ -58,6 +60,23 @@ Three adaptive quality modes for different connection speeds:
 
 ## 🚀 Quick Start
 
+### 🎬 5-Minute Setup
+
+```
+1. Firebase (5 min)          2. Clone & Config (2 min)      3. Deploy (3 min)
+   ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
+   │ Create      │              │ git clone   │              │ Push to     │
+   │ Project     │──────────────▶ Configure   │──────────────▶ GitHub      │
+   │ Enable DB   │              │ Firebase    │              │ Enable Pages│
+   └─────────────┘              └─────────────┘              └─────────────┘
+         ↓                            ↓                            ↓
+   Get Config JSON            js/firebase-config.js         Live App! 🎉
+```
+
+**Total time:** ~10 minutes | **Difficulty:** Easy | **Cost:** Free
+
+---
+
 ### Prerequisites
 - Modern web browser with WebRTC support (Chrome 74+, Firefox 66+, Safari 12+)
 - Camera and microphone access
@@ -71,24 +90,418 @@ git clone https://github.com/yourusername/ascii-stream.git
 cd ascii-stream
 ```
 
-2. **Configure Firebase**
+2. **Setup Firebase Realtime Database**
 
-Create `js/firebase-config.js`:
-```javascript
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  databaseURL: "https://your-app.firebaseio.com",
-  projectId: "your-app",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123"
+Firebase is used **only for signaling** (exchanging room codes). No user data or media is stored on Firebase servers.
+
+#### Step 2.1: Create Firebase Project
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Click **"Add project"** or **"Create a project"**
+3. Enter project name (e.g., `ascii-stream-app`)
+4. Disable Google Analytics (not needed) or keep enabled
+5. Click **"Create project"**
+
+#### Step 2.2: Enable Realtime Database
+
+1. In Firebase Console, select your project
+2. In the left sidebar, click **"Build"** → **"Realtime Database"**
+3. Click **"Create Database"**
+4. Choose location (closest to your users):
+   - `us-central1` (United States)
+   - `europe-west1` (Belgium)
+   - `asia-southeast1` (Singapore)
+5. **Security rules**: Select **"Start in test mode"** (we'll update this next)
+6. Click **"Enable"**
+
+#### Step 2.3: Configure Security Rules
+
+**IMPORTANT:** Default test mode rules expire after 30 days. Use these production rules:
+
+1. In Realtime Database page, click **"Rules"** tab
+2. Replace with these rules:
+
+```json
+{
+  "rules": {
+    "rooms": {
+      "$room_id": {
+        ".read": true,
+        ".write": true,
+        ".indexOn": ["createdAt"]
+      }
+    }
+  }
 }
 ```
 
-3. **Set Firebase Rules**
+3. Click **"Publish"**
 
-In Firebase Console → Realtime Database → Rules:
+**What these rules do:**
+- Allow anyone to read/write to `/rooms/` path (needed for P2P signaling)
+- Room codes are temporary and auto-deleted by the app
+- No sensitive data is stored (only SDP offers/answers)
+
+**Security note:** For production, consider implementing:
+- Room code validation (6-digit format)
+- Rate limiting (Firebase Functions)
+- Auto-cleanup of old rooms (Cloud Functions)
+
+#### Step 2.4: Get Firebase Config
+
+1. In Firebase Console, click ⚙️ (gear icon) → **"Project settings"**
+2. Scroll down to **"Your apps"** section
+3. Click **"Web"** icon (</>) to add web app
+4. Register app:
+   - **App nickname:** `ASCII//STREAM Web`
+   - ✅ Check **"Also set up Firebase Hosting"** (optional)
+   - Click **"Register app"**
+5. Copy the Firebase SDK configuration:
+
+```javascript
+// You'll see something like this:
+const firebaseConfig = {
+  apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  authDomain: "your-project.firebaseapp.com",
+  databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcdef1234567890"
+};
+```
+
+6. Click **"Continue to console"**
+
+#### Step 2.5: Create Config File
+
+Create `js/firebase-config.js` in your project:
+
+```javascript
+// js/firebase-config.js
+export const firebaseConfig = {
+  apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  authDomain: "your-project.firebaseapp.com",
+  databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcdef1234567890"
+}
+```
+
+**IMPORTANT:** 
+- ⚠️ Don't commit `firebase-config.js` with real credentials to public repos
+- Add `js/firebase-config.js` to `.gitignore`
+- For public repos, use environment variables or Firebase Hosting
+
+#### Step 2.6: Verify Setup
+
+Test your Firebase connection:
+
+1. Open `index.html` in browser
+2. Open Developer Console (F12)
+3. Check for Firebase connection:
+   - ✅ **Success:** No errors, boot animation completes
+   - ❌ **Error:** "Firebase not initialized" or "PERMISSION_DENIED"
+
+**Common Issues:**
+
+| Error | Solution |
+|-------|----------|
+| `PERMISSION_DENIED` | Check Realtime Database rules (Step 2.3) |
+| `Firebase not initialized` | Verify `firebase-config.js` is loaded |
+| `databaseURL not found` | Make sure you enabled Realtime Database |
+| 404 on config file | Check file path: `js/firebase-config.js` |
+
+3. **Deploy to GitHub Pages**
+
+#### Option A: GitHub Pages (Recommended)
+
+**Step 3.1: Prepare Repository**
+
+1. Create `.gitignore` file:
+```bash
+# .gitignore
+js/firebase-config.js
+node_modules/
+.DS_Store
+```
+
+2. Create `js/firebase-config.example.js` (template for others):
+```javascript
+// js/firebase-config.example.js
+export const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "your-project.firebaseapp.com",
+  databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abc123"
+}
+```
+
+**Step 3.2: Push to GitHub**
+
+```bash
+# Initialize git (if not already)
+git init
+
+# Add all files
+git add .
+
+# Commit
+git commit -m "Initial commit: ASCII//STREAM v5.2"
+
+# Add remote (replace with your repo URL)
+git remote add origin https://github.com/YOUR_USERNAME/ascii-messenger.git
+
+# Push to main branch
+git push -u origin main
+```
+
+**Step 3.3: Enable GitHub Pages**
+
+1. Go to your GitHub repository
+2. Click **"Settings"** tab
+3. Scroll down to **"Pages"** section (left sidebar)
+4. Under **"Source"**:
+   - Select branch: `main`
+   - Select folder: `/ (root)`
+5. Click **"Save"**
+6. Wait 1-2 minutes for deployment
+
+**Step 3.4: Add Firebase Config to GitHub Pages**
+
+Since `firebase-config.js` is in `.gitignore`, you need to add it manually:
+
+**Method 1: Use GitHub Secrets (Recommended)**
+
+1. Create `js/firebase-config.js` locally with your config
+2. In GitHub repo → **Settings** → **Secrets and variables** → **Actions**
+3. Click **"New repository secret"**
+4. Name: `FIREBASE_CONFIG`
+5. Value: (paste your entire firebase config object)
+6. Create GitHub Actions workflow (`.github/workflows/deploy.yml`):
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Create firebase config
+        run: |
+          echo "${{ secrets.FIREBASE_CONFIG }}" > js/firebase-config.js
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+```
+
+**Method 2: Separate Branch (Simpler)**
+
+1. Create a separate `gh-pages` branch:
+```bash
+git checkout -b gh-pages
+```
+
+2. Add your actual `firebase-config.js` to this branch:
+```bash
+# Remove firebase-config.js from .gitignore on gh-pages branch
+git add js/firebase-config.js
+git commit -m "Add Firebase config for GitHub Pages"
+git push origin gh-pages
+```
+
+3. In GitHub Settings → Pages, select `gh-pages` branch
+
+**Step 3.5: Access Your App**
+
+Your app will be available at:
+```
+https://YOUR_USERNAME.github.io/REPO_NAME/
+```
+
+Example: `https://lmcontent.github.io/ascii-messenger/`
+
+**Step 3.6: Custom Domain (Optional)**
+
+1. Buy a domain (e.g., `ascii-stream.app`)
+2. In domain registrar, add DNS records:
+   ```
+   Type: A
+   Name: @
+   Value: 185.199.108.153
+   
+   Type: A
+   Name: @
+   Value: 185.199.109.153
+   
+   Type: A
+   Name: @
+   Value: 185.199.110.153
+   
+   Type: A
+   Name: @
+   Value: 185.199.111.153
+   
+   Type: CNAME
+   Name: www
+   Value: YOUR_USERNAME.github.io
+   ```
+
+3. In GitHub repo Settings → Pages → Custom domain:
+   - Enter your domain (e.g., `ascii-stream.app`)
+   - ✅ Check "Enforce HTTPS"
+   - Click "Save"
+
+4. Wait 24-48 hours for DNS propagation
+
+---
+
+#### Option B: Local Testing
+
+For local development and testing:
+
+```bash
+# Python 3
+python3 -m http.server 8000
+
+# Or use Node.js http-server
+npm install -g http-server
+http-server -p 8000
+
+# Or use PHP
+php -S localhost:8000
+```
+
+Open browser: `http://localhost:8000`
+
+**Note:** Local testing still requires internet for Firebase signaling.
+
+---
+
+#### Option C: Other Hosting Platforms
+
+**Netlify:**
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Deploy
+netlify deploy --prod
+```
+
+**Vercel:**
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel --prod
+```
+
+**Firebase Hosting:**
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login
+firebase login
+
+# Initialize hosting
+firebase init hosting
+
+# Deploy
+firebase deploy --only hosting
+```
+
+---
+
+## ✅ Quick Test
+
+After deployment, verify everything works:
+
+### Test Checklist
+
+1. **Open your deployed app** (e.g., `https://yourusername.github.io/ascii-messenger/`)
+
+2. **Check Console** (F12 → Console):
+   ```
+   ✅ [BOOT] Initializing...
+   ✅ [BOOT] System online
+   ✅ No Firebase errors
+   ```
+
+3. **Create Room:**
+   - Click "Create Room"
+   - Room code appears (e.g., `ABC123`)
+   - ✅ No errors in console
+
+4. **Test P2P Connection:**
+   - Open app in second browser/tab (or ask a friend)
+   - Join with the room code
+   - ✅ Connection established
+   - ✅ ASCII video appears
+   - ✅ Audio works
+
+5. **Test Bandwidth Modes:**
+   - During call, click "Bandwidth" menu
+   - Switch to LOW or ULTRA
+   - ✅ Quality changes immediately
+   - ✅ No disconnection
+
+6. **Test Messenger:**
+   - Click "Mode Toggle"
+   - Send a text message
+   - ✅ Message appears on both sides
+   - ✅ Switch back to video mode
+
+**If everything works:** 🎉 **Deployment successful!**
+
+**If issues occur:** See [Troubleshooting](#-troubleshooting) section below.
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues & Solutions
+
+#### 1. "Firebase not initialized"
+
+**Symptom:** Boot screen shows error, can't proceed
+
+**Causes & Solutions:**
+- ❌ Missing `firebase-config.js`
+  - ✅ Create file at `js/firebase-config.js`
+  - ✅ Copy config from Firebase Console
+  
+- ❌ Wrong file path
+  - ✅ Ensure file is at `js/firebase-config.js` (not `firebase-config.js` in root)
+  
+- ❌ Syntax error in config file
+  - ✅ Check `export const firebaseConfig = { ... }`
+  - ✅ Ensure proper JSON formatting
+
+#### 2. "PERMISSION_DENIED" Error
+
+**Symptom:** Error in console, can't create/join rooms
+
+**Solution:**
+1. Open Firebase Console
+2. Go to Realtime Database → Rules
+3. Ensure rules allow access:
 ```json
 {
   "rules": {
@@ -101,22 +514,151 @@ In Firebase Console → Realtime Database → Rules:
   }
 }
 ```
+4. Click "Publish"
+5. Wait 10 seconds, refresh your app
 
-4. **Deploy**
+#### 3. Can't Join Room / "Room not found"
 
-**Option A: GitHub Pages**
-```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
+**Causes & Solutions:**
+- ❌ Room expired (10 minute timeout)
+  - ✅ Create new room
+  
+- ❌ Wrong room code
+  - ✅ Double-check code (case-sensitive)
+  
+- ❌ Creator closed tab before peer joined
+  - ✅ Creator must keep tab open until peer joins
+
+#### 4. No Video / Black Screen
+
+**Causes & Solutions:**
+- ❌ Camera permission denied
+  - ✅ Browser → Settings → Permissions → Allow camera
+  - ✅ Reload page
+  
+- ❌ Camera in use by another app
+  - ✅ Close other apps using camera (Zoom, Skype, etc.)
+  
+- ❌ Browser doesn't support getUserMedia
+  - ✅ Use Chrome 74+, Firefox 66+, or Safari 12+
+
+#### 5. No Audio / Can't Hear Peer
+
+**Causes & Solutions:**
+- ❌ Microphone permission denied
+  - ✅ Browser → Settings → Permissions → Allow microphone
+  
+- ❌ Muted by mistake
+  - ✅ Click microphone icon to unmute
+  
+- ❌ Audio output device issue
+  - ✅ Check system sound settings
+  - ✅ Try headphones
+  
+- ❌ Opus codec not supported
+  - ✅ Update browser to latest version
+
+#### 6. Connection Failed / ICE Connection Failed
+
+**Causes & Solutions:**
+- ❌ Both users behind strict NAT/firewall
+  - ✅ Try different network (mobile data, different WiFi)
+  - ✅ Setup TURN server (advanced, see below)
+  
+- ❌ Corporate firewall blocking WebRTC
+  - ✅ Use VPN
+  - ✅ Try from home network
+
+#### 7. Poor Quality / Choppy Video
+
+**Solutions:**
+- Switch to LOW or ULTRA bandwidth mode
+- Close other bandwidth-heavy apps
+- Move closer to WiFi router
+- Check internet speed (need at least 50 kbps for NORMAL mode)
+
+#### 8. GitHub Pages Shows 404
+
+**Causes & Solutions:**
+- ❌ Pages not enabled
+  - ✅ Settings → Pages → Enable
+  
+- ❌ Wrong branch selected
+  - ✅ Select `main` or `gh-pages` branch
+  
+- ❌ Build still in progress
+  - ✅ Wait 1-2 minutes, refresh
+
+---
+
+## 🆘 Advanced: TURN Server Setup
+
+If P2P connection fails due to strict NAT/firewall, you need a TURN server.
+
+### Option 1: Free TURN Servers (Testing Only)
+
+```javascript
+// In webrtc.js, add to iceServers:
+const configuration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { 
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ]
+}
 ```
-Enable GitHub Pages in repository settings.
 
-**Option B: Local Server**
+**Warning:** Free TURN servers are:
+- ❌ Unreliable (may go offline)
+- ❌ Slow (high latency)
+- ❌ Insecure (no privacy)
+
+### Option 2: Self-Hosted TURN Server
+
+1. **Setup Coturn on Ubuntu:**
 ```bash
-python3 -m http.server 8000
-# Open http://localhost:8000
+# Install coturn
+sudo apt-get install coturn
+
+# Configure
+sudo nano /etc/turnserver.conf
+
+# Add:
+listening-port=3478
+fingerprint
+lt-cred-mech
+user=username:password
+realm=yourdomain.com
 ```
+
+2. **Start server:**
+```bash
+sudo systemctl start coturn
+sudo systemctl enable coturn
+```
+
+3. **Update webrtc.js:**
+```javascript
+const configuration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { 
+      urls: 'turn:yourdomain.com:3478',
+      username: 'username',
+      credential: 'password'
+    }
+  ]
+}
+```
+
+### Option 3: Commercial TURN Services
+
+- **Twilio STUN/TURN**: Free tier available
+- **Xirsys**: WebRTC infrastructure
+- **Metered.ca**: Pay-as-you-go TURN
 
 ---
 
@@ -206,21 +748,6 @@ ascii-stream/
 ---
 
 ## ⚙️ Configuration
-
-### API Settings
-
-Modify `js/firebase-config.js` starting from line 9 with the data from https://console.firebase.google.com/u/0/ for your project:
-```javascript
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "ascii-messenger.firebaseapp.com",
-  databaseURL: "https://ascii-messenger-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "ascii-messenger",
-  storageBucket: "ascii-messenger.firebasestorage.app",
-  messagingSenderId: "144168420961",
-  appId: "1:144168420961:web:a6491ce66a162d250fcc20"
-};
-```
 
 ### ASCII Settings
 
@@ -446,13 +973,29 @@ This project is licensed under the **MIT License**.
 
 ---
 
+## 🎯 Quick Links
+
+- 🌐 **[Live Demo](https://lmcontent.github.io/ascii-messenger/)** - Try it now!
+- 📖 [Full Documentation](#-quick-start)
+- 🔧 [Firebase Setup Guide](#step-21-create-firebase-project)
+- 🚀 [GitHub Pages Deployment](#option-a-github-pages-recommended)
+- 🐛 [Troubleshooting](#-troubleshooting)
+- 💡 [Use Cases](#-use-cases)
+- 🤝 [Contributing](#-contributing)
+- ⭐ [Star on GitHub](https://github.com/LMcontent/ascii-messenger)
+
+---
+
 ## 📞 Support & Contact
 
 ### Issues
-Found a bug? [Open an issue](https://github.com/yourusername/ascii-stream/issues)
+Found a bug? [Open an issue](https://github.com/LMcontent/ascii-messenger/issues)
 
 ### Discussions
-Have questions? [Start a discussion](https://github.com/yourusername/ascii-stream/discussions)
+Have questions? [Start a discussion](https://github.com/LMcontent/ascii-messenger/discussions)
+
+### Live Demo
+Try the app: [https://lmcontent.github.io/ascii-messenger/](https://lmcontent.github.io/ascii-messenger/)
 
 ---
 
