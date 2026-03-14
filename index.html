@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ASCII//STREAM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/messenger-screens.css">
+
+</head>
+<body>
+  <!-- Atmospheric effects -->
+  <div class="scanlines"></div>
+  <div class="noise"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- BOOT SCREEN -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-boot" class="screen active">
+    <div class="boot-container">
+      <pre class="boot-logo">
+   ___   ____________________       _________ ____________  _________    __  ___
+  / _ | / __/ ___/  _/  _/ _ \     / __/_  __/ _ \/ __/ _ | /  |/  / /
+ / __ |_\ \/ /___/ /_/ // // /    _\ \  / / / , _/ _// __ |/ /|_/ /_/
+/_/ |_/___/\___/___/___/____/____/___/ /_/ /_/|_/___/_/ |_/_/  /_(_)
+                          /_____/
+      </pre>
+      <p class="boot-tagline">P2P VIDEO MESSENGER</p>
+      <div id="boot-status" class="boot-status">INITIALIZING...</div>
+      <div class="boot-bar">
+        <div id="boot-bar-fill" class="boot-bar-fill"></div>
+      </div>
+      <div id="boot-log" class="boot-log"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- LOBBY SCREEN -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <h1 class="lobby-title">ASCII//STREAM</h1>
+        <span class="lobby-version">V1.0.0</span>
+      </div>
+
+      <div class="lobby-panels">
+        <!-- CREATE PANEL -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-icon">◉</span>
+            INITIALIZE SESSION
+          </div>
+          <div class="panel-body">
+            <p class="panel-desc">Generate a room code and share it with your peer.</p>
+            <button id="btn-create" class="btn btn-primary">CREATE ROOM</button>
+            <div id="room-code-display" class="room-code-display hidden">
+              <div class="room-code-label">SHARE THIS CODE:</div>
+              <div id="room-code-value" class="room-code">------</div>
+              <div class="room-code-hint">Send this code to your peer via any messenger</div>
+            </div>
+            <div id="create-status" class="connecting-status"></div>
+          </div>
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="lobby-divider">
+          <div class="divider-line"></div>
+          <div class="divider-text">OR</div>
+          <div class="divider-line"></div>
+        </div>
+
+        <!-- JOIN PANEL -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-icon">◎</span>
+            CONNECT TO SESSION
+          </div>
+          <div class="panel-body">
+            <p class="panel-desc">Enter a room code to join an existing session.</p>
+            <div class="input-group">
+              <input
+                type="text"
+                id="join-code-input"
+                class="code-input"
+                placeholder="ENTER CODE"
+                maxlength="6"
+                autocomplete="off"
+              />
+            </div>
+            <button id="btn-join" class="btn btn-secondary">CONNECT</button>
+            <div id="join-status" class="connecting-status hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="lobby-footer">
+        P2P encrypted connection • No server involved • WebRTC DataChannel
+      </footer>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- CALL SCREEN -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-call" class="screen">
+    <div class="call-layout">
+      <!-- TOP BAR -->
+      <div class="call-topbar">
+        <div class="topbar-left">
+          <h2 class="call-title">ASCII//STREAM</h2>
+          <span id="call-status-badge" class="call-badge">● CONNECTING</span>
+        </div>
+
+        <div class="topbar-center">
+          <div class="fps-control">
+            <span class="fps-label">FPS</span>
+            <input type="range" id="fps-slider" class="fps-slider" min="1" max="24" value="10" />
+            <span id="fps-display" class="fps-value">10</span>
+            <button id="btn-auto-fps" class="btn-auto-fps">AUTO</button>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="stats">
+            <div class="stat">TX: <span id="stat-tx">0</span> kbps</div>
+            <div class="stat">RTT: <span id="stat-rtt">0</span> ms</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIDEO AREA -->
+      <div class="video-area">
+        <!-- REMOTE VIDEO -->
+        <div class="video-panel video-remote">
+          <div class="video-label">REMOTE FEED</div>
+          <div class="video-ascii-container">
+            <pre id="remote-ascii" class="ascii-display">WAITING FOR SIGNAL...</pre>
+          </div>
+          <div class="video-overlay-corner tl"></div>
+          <div class="video-overlay-corner tr"></div>
+          <div class="video-overlay-corner bl"></div>
+          <div class="video-overlay-corner br"></div>
+        </div>
+
+        <!-- LOCAL VIDEO -->
+        <div class="video-panel video-local">
+          <div class="video-label">LOCAL FEED</div>
+          <div class="video-ascii-container">
+            <pre id="local-ascii" class="ascii-display">INITIALIZING CAMERA...</pre>
+          </div>
+          <video id="local-video" autoplay muted playsinline style="display:none;"></video>
+          <div class="video-overlay-corner tl"></div>
+          <div class="video-overlay-corner tr"></div>
+          <div class="video-overlay-corner bl"></div>
+          <div class="video-overlay-corner br"></div>
+        </div>
+      </div>
+
+      <!-- MESSENGER AREA (hidden by default) -->
+      <div class="messenger-area hidden">
+        <!-- Messages Container -->
+        <div class="messages-wrapper">
+          <div id="messages-container" class="messages-container">
+            <!-- Messages will be rendered here by messenger.js -->
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="messenger-input">
+          <input 
+            type="text" 
+            id="message-input" 
+            class="message-input" 
+            placeholder="Введите сообщение..."
+            maxlength="500"
+          />
+          <button id="btn-send-message" class="btn-send-message" title="Отправить">
+            📤
+          </button>
+        </div>
+      </div>
+
+      <!-- BOTTOM BAR -->
+      <div class="call-bottombar">
+        <div class="media-controls">
+          <div class="media-controls-left">
+            <button class="media-btn media-btn-compact" id="btn-toggle-cam" title="Toggle Camera">
+              <span class="media-icon">◉</span>
+              <span class="media-label">CAM</span>
+            </button>
+            
+            <!-- MODE SELECTOR: VIDEO / MESSENGER -->
+            <div class="mode-selector">
+              <button id="btn-mode-video" class="mode-btn mode-btn-active">📹 VIDEO</button>
+              <button id="btn-mode-messenger" class="mode-btn">💬 MSG</button>
+            </div>
+            
+            <button class="media-btn media-btn-compact" id="btn-swap-views" title="Swap Views">
+              <span class="media-icon">⇄</span>
+              <span class="media-label">SWAP</span>
+            </button>
+            
+            <!-- BANDWIDTH MODE SELECTOR -->
+            <div class="bandwidth-selector">
+              <button id="btn-bandwidth" class="bandwidth-toggle" title="Bandwidth Mode">
+                <span id="bandwidth-indicator" class="bandwidth-indicator bandwidth-normal">⚡ NORMAL</span>
+              </button>
+              <div id="bandwidth-menu" class="bandwidth-menu hidden">
+                <button class="bandwidth-option" data-mode="normal">
+                  <span class="bandwidth-icon">⚡</span>
+                  <div class="bandwidth-info">
+                    <div class="bandwidth-name">NORMAL</div>
+                    <div class="bandwidth-desc">WiFi/4G · 24kbps</div>
+                  </div>
+                </button>
+                <button class="bandwidth-option" data-mode="low">
+                  <span class="bandwidth-icon">🐌</span>
+                  <div class="bandwidth-info">
+                    <div class="bandwidth-name">LOW</div>
+                    <div class="bandwidth-desc">Slow 3G · 8kbps</div>
+                  </div>
+                </button>
+                <button class="bandwidth-option" data-mode="ultra">
+                  <span class="bandwidth-icon">📡</span>
+                  <div class="bandwidth-info">
+                    <div class="bandwidth-name">ULTRA</div>
+                    <div class="bandwidth-desc">Mesh/LoRa · 6kbps</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="media-controls-right">
+            <button class="media-btn media-btn-disconnect" id="btn-hangup" title="Disconnect">
+              <span class="media-icon">✕</span>
+              <span class="media-label">END</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ascii-settings">
+          <label class="setting-label">COLS</label>
+          <select id="ascii-cols" class="setting-select">
+            <option value="60">60</option>
+            <option value="80">80</option>
+            <option value="100">100</option>
+            <option value="120" selected>120</option>
+          </select>
+
+          <label class="setting-label">STYLE</label>
+          <select id="ascii-charset" class="setting-select">
+            <option value="gradient" selected>GRADIENT</option>
+            <option value="blocks">BLOCKS</option>
+            <option value="standard">STANDARD</option>
+            <option value="minimal">MINIMAL</option>
+          </select>
+
+          <label class="setting-label setting-checkbox">
+            <input type="checkbox" id="ascii-invert" class="setting-checkbox-input">
+            <span class="setting-checkbox-custom"></span>
+            <span class="setting-checkbox-label">INVERT</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js'
+    import { getDatabase }   from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js'
+    import { firebaseConfig } from './js/firebase-config.js'
+    import { FirebaseWrapper } from './js/firebase-wrapper.js'
+
+    const app = initializeApp(firebaseConfig)
+    const database = getDatabase(app)
+    
+    // Create wrapper for v8-style API
+    window.firebase = new FirebaseWrapper(database)
+    
+    console.log('[FIREBASE] Initialized with wrapper')
+  </script>
+
+  <!-- Main app -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
