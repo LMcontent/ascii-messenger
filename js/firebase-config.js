@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyCIf176dUzF-K0azEXndfUoKQuePTjgmfs",
   authDomain: "ascii-messenger.firebaseapp.com",
   databaseURL: "https://ascii-messenger-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "ascii-messenger",
